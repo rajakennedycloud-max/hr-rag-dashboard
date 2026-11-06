@@ -162,15 +162,15 @@ All authenticated endpoints return `401 Unauthorized` if no valid session is pre
 Log in with realistic HR credentials on the login page:
 
 #### TA Specialists (Full Access)
-- **Karthick** — `karthick@techcorp.com` / `hr@2024` — Technology sector
-- **Gokul** — `gokul@techcorp.com` / `hr@2024` — BFSI sector
+- **Ka** — `ka@techcorp.com` — Technology sector
+- **Go** — `go@techcorp.com` — BFSI sector
 
 #### Business Heads (Read-Only)
-- **Premkumar** — `premkumar@techcorp.com` / `hr@2024` — Technology sector
-- **Inigo Paul** — `inigo.paul@techcorp.com` / `hr@2024` — BFSI sector
+- **Prem** — `prem@techcorp.com` — Technology sector
+- **Paul** — `paul@techcorp.com` — BFSI sector
 
 #### System Administrator
-- **Admin** — `admin@techcorp.com` / `hr@2024` — Full system access
+- **Admin** — `admin@techcorp.com` — Full system access
 
 *See [USER_GUIDE.md](./USER_GUIDE.md) for complete user guide and feature documentation.*
 
