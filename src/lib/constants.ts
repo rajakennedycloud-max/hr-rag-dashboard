@@ -1,0 +1,2 @@
+export const ACTIVE_STATUSES = ["OFFERED", "OFFER_PENDING"];
+export const NOT_IN_SNAPSHOT = "NOT_IN_SNAPSHOT";

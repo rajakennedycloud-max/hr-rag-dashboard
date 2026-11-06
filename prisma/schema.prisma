@@ -1,0 +1,244 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      String   @default("TA_SPECIALIST") // TA_SPECIALIST, BUSINESS_HEAD, ADMIN
+  sector    String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  candidates   Candidate[]
+  alerts       Alert[]
+  auditLogs    AuditLog[]
+  interactions Interaction[]
+  remarkHistory RemarkHistory[]
+  importBatches ImportBatch[]
+}
+
+model Candidate {
+  id                    String   @id @default(cuid())
+  reqNumber             String
+  reqTitle              String?
+  reqType               String?
+  candidateExternalId   String   @unique
+  candidateName         String
+  mobileNumber          String?
+  email                 String
+  candidateSource       String?
+  currentStatus         String   @default("OFFERED") // OFFERED, OFFER_PENDING, JOINED, DROPPED, ON_HOLD
+  expectedDOJ           DateTime
+  joiningMonth          String
+  earliestOfferDate     DateTime?
+  offerExtendedDate     DateTime
+  offerRoleTitle        String?
+  offerLocation         String?
+  offerCity             String?
+  employeeClassification String?
+  experience            String?
+  sector                String?
+  portfolio             String?
+  project               String?
+  customer              String?
+  actualCustomer        String?
+  department            String?
+  prfPractice           String?
+  prfPlatform           String?
+  prfPrimarySkill       String?
+  offeredSkill          String?
+  prfGrade              String?
+  offeredLevel          String?
+  hiringManagerEmail    String?
+  activeDays            Int?
+  ageingBucket          String?
+  relocationEligibility Boolean?
+  prfJobStream          String?
+  offeredJobStream      String?
+  lastImportBatchId     String?
+  lastImportBatch       ImportBatch? @relation(fields: [lastImportBatchId], references: [id])
+
+  // TA Specialist Inputs
+  preJoiningConnect1    String?  // COMPLETED, PENDING, NOT_REACHABLE
+  preJoiningConnect1Date DateTime?
+  preJoiningConnect2    String?
+  preJoiningConnect2Date DateTime?
+  resignationProofUrl   String?
+  resignationProofFile  String?  // Local file path
+  resignationReceived   Boolean  @default(false)
+  resignationReceivedAt DateTime?
+  kycCompleted          Boolean  @default(false)
+  kycCompletedAt        DateTime?
+  kycDocumentsFile      String?  // KYC document uploads
+  lwdConfirmed          Boolean  @default(false)
+  lwdConfirmedAt        DateTime?
+  counterOfferReceived  Boolean  @default(false)
+  activeOnJobPortal     Boolean  @default(false)
+  candidateDemands      String?
+  recruiterRemarks      String?
+  resumeFile            String?   // Resume attachment
+
+  // RAG Scoring
+  ragScore              Float    @default(50.0)
+  ragColor              String   @default("GREY") // RED, AMBER, GREEN, GREY (before activation)
+  ragActivated          Boolean  @default(false)
+  ragActivationDate     DateTime?
+
+  // Relationships
+  recruiterId           String?
+  recruiter             User?    @relation(fields: [recruiterId], references: [id])
+
+  scoreHistory          ScoreHistory[]
+  ragTransitions        RagTransition[]
+  interactions          Interaction[]
+  alerts                Alert[]
+  weeklyUpdates         WeeklyUpdate[]
+  dynamicChecks         DynamicCheck[]
+  attachments           Attachment[]
+  remarkHistory         RemarkHistory[]
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+model ScoreHistory {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  parameter   String   // RESIGNATION, CONNECT_1, CONNECT_2, KYC, LWD, COUNTER_OFFER, JOB_PORTAL
+  oldScore    Float
+  newScore    Float
+  impact      Float    // +/- percentage
+  reason      String
+  createdAt   DateTime @default(now())
+}
+
+model RagTransition {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  fromColor   String
+  toColor     String
+  fromScore   Float
+  toScore     Float
+  reason      String?
+  createdAt   DateTime @default(now())
+}
+
+model Interaction {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  type        String   // CALL, EMAIL, MEETING, NOTE, SYSTEM
+  summary     String
+  sentiment   String?  // POSITIVE, NEUTRAL, NEGATIVE (AI-computed)
+  details     String?
+  createdAt   DateTime @default(now())
+}
+
+model Alert {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  assignedToId String
+  assignedTo  User     @relation(fields: [assignedToId], references: [id])
+  type        String   // RESIGNATION_PENDING, CONNECT_1_DUE, CONNECT_2_DUE, JOB_PORTAL_CHECK, COUNTER_CHECK, KYC_DUE, LWD_DUE
+  title       String
+  description String?
+  dueDate     DateTime
+  status      String   @default("OPEN") // OPEN, IN_PROGRESS, COMPLETED, DISMISSED
+  priority    String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  completedAt DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model WeeklyUpdate {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  weekNumber  Int
+  updateText  String
+  ragColorAtTime String
+  scoreAtTime Float
+  createdAt   DateTime @default(now())
+}
+
+model DynamicCheck {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  checkType   String   // JOB_PORTAL, COUNTER_OFFER
+  checkNumber Int
+  scheduledAt DateTime
+  completedAt DateTime?
+  result      Boolean? // true = negative finding, false = clear
+  notes       String?
+  createdAt   DateTime @default(now())
+}
+
+model Attachment {
+  id          String   @id @default(cuid())
+  candidateId String
+  candidate   Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  fileName    String
+  filePath    String
+  fileSize    Int
+  mimeType    String
+  uploadedBy  String
+  uploadedAt  DateTime @default(now())
+}
+
+model RemarkHistory {
+  id            String   @id @default(cuid())
+  candidateId   String
+  candidate     Candidate @relation(fields: [candidateId], references: [id], onDelete: Cascade)
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  remarkType    String   // RECRUITER_REMARKS, CANDIDATE_DEMANDS
+  previousValue String?
+  newValue      String
+  reason        String?  // Optional reason for the change
+  createdAt     DateTime @default(now())
+}
+
+model ImportBatch {
+  id             String   @id @default(cuid())
+  fileName       String
+  importedById   String
+  importedBy     User     @relation(fields: [importedById], references: [id])
+  totalRows      Int
+  created        Int      @default(0)
+  updated        Int      @default(0)
+  unchanged      Int      @default(0)
+  skipped        Int      @default(0)
+  missing        Int      @default(0)
+  errorCount     Int      @default(0)
+  errors         String?  // JSON array of row errors
+  status         String   @default("COMPLETED") // COMPLETED, FAILED, PARTIAL
+  candidates     Candidate[]
+  createdAt      DateTime @default(now())
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  entityType  String   // CANDIDATE, ALERT, SCORE, RAG, INTERACTION
+  entityId    String
+  action      String   // CREATE, UPDATE, DELETE, SCORE_CHANGE, RAG_CHANGE
+  oldValue    String?
+  newValue    String?
+  description String
+  createdAt   DateTime @default(now())
+}
